@@ -18,8 +18,12 @@
 
 <script>
 import moment from 'moment'
+
 export default {
   name: 'TodoItem',
+  props: {
+    todo: Object
+  },
   setup (props) {
     const formatDate = (date) => {
       moment(date).fromNow()
@@ -34,7 +38,6 @@ export default {
     }
 
     return {
-      todo: props.todo,
       formatDate,
       finishTodo,
       deleteTodo
