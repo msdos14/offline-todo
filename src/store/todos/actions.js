@@ -29,3 +29,17 @@ export async function finishTodo (context, payload) {
     console.error(`TODO ${payload.id} not found in DB`)
   }
 }
+
+export async function deleteTodo (context, payload) {
+  const db = await Database.getDBInstance()
+  const todo = await db.todos.findOne({
+    selector: {
+      id: payload.id
+    }
+  }).exec()
+  if (todo) {
+    todo.remove()
+  } else {
+    console.error(`TODO ${payload.id} not found in DB`)
+  }
+}

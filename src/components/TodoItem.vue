@@ -34,8 +34,8 @@ export default {
       await $store.dispatch('todos/finishTodo', { id: props.todo.id, is_completed: !props.todo.is_completed })
     }
 
-    const deleteTodo = () => {
-      alert('Not implement')
+    const deleteTodo = async () => {
+      await $store.dispatch('todos/deleteTodo', { id: props.todo.id })
     }
 
     return {
