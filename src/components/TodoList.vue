@@ -27,23 +27,29 @@
 <script>
 
 import * as Database from '../utils/Database'
-import { onMounted, ref } from 'vue'
+import { onMounted, computed } from 'vue'
 import moment from 'moment'
+import { useStore } from 'vuex'
 
 export default {
   name: 'TodoList',
 
   setup () {
-    const todos = ref([])
+    const $store = useStore()
+
+    const todos = computed(() => $store.state.todos.todos)
+
     onMounted(() => {
-      Database.getDBInstance()
-        .then((db) => {
-          db.todos.find()
-            .sort('created_at').$.subscribe((records) => {
-              console.log('todos', records)
-              todos.value = records
-            })
-        })
+      setTimeout(() => {
+        Database.getDBInstance()
+          .then((db) => {
+            db.todos.find()
+              .sort('created_at').$.subscribe((records) => {
+                console.log('TODOS', records)
+                $store.dispatch('todos/pushToTodos', { todos: records })
+              })
+          })
+      }, 1000)
     })
 
     return {

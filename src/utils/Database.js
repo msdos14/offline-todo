@@ -1,22 +1,28 @@
-import { createRxDatabase, addRxPlugin } from 'rxdb/plugins/core'
+import lodash from 'lodash'
+
+import store from '../store'
 
 import {
   TodoSchema
 } from './Schema/Todo'
 
+import { createRxDatabase, addRxPlugin } from 'rxdb/plugins/core'
+
 import { RxDBValidatePlugin } from 'rxdb/plugins/validate'
-import { RxDBReplicationGraphQLPlugin } from 'rxdb/plugins/replication-graphql'
+addRxPlugin(RxDBValidatePlugin)
+
+import {
+  RxDBReplicationGraphQLPlugin
+} from 'rxdb/plugins/replication-graphql'
+addRxPlugin(RxDBReplicationGraphQLPlugin)
 
 import {
   SubscriptionClient
 } from 'subscriptions-transport-ws'
 
 // ONLY USE IN DEV MODE
-import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode'
-addRxPlugin(RxDBDevModePlugin)
-
-addRxPlugin(RxDBValidatePlugin)
-addRxPlugin(RxDBReplicationGraphQLPlugin)
+// import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode'
+// addRxPlugin(RxDBDevModePlugin)
 
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption'
 addRxPlugin(RxDBEncryptionPlugin)
@@ -54,6 +60,14 @@ export const createDb = async () => {
   })
 
   return db
+}
+
+export const cleanUp = async () => {
+  if (db) {
+    console.log('Destroying DBInstance')
+    await db.destroy()
+    console.log('Destroying DBInstance DONE')
+  }
 }
 
 export const getDBInstance = async () => {
@@ -96,7 +110,7 @@ const pullQueryBuilder = (userId) => {
         id
         title
         is_completed
-        deleted
+        _deleted
         created_at
         updated_at
         user_id
@@ -110,23 +124,23 @@ const pullQueryBuilder = (userId) => {
 }
 
 const pushQueryBuilder = doc => {
+  console.log('pushQueryBuilder START')
   const query = `
-    mutation InsertTodo($todo: [Todos_insert_input]!) {
-      insert_Todos(
-        objects: $todo,
-        on_conflict: {
-          constraint: Todos_pkey,
-          update_columns: [is_completed, deleted, updated_at]
-        }){
-        returning {
-          id
-        }
+  mutation SetTodos($todo: [Todos_insert_input!]!) {
+    insert_Todos(objects: $todo, on_conflict: {constraint: Todos_pkey, update_columns: [title, is_completed, _deleted, updated_at]}) {
+      returning {
+        id
       }
     }
+  }
   `
   const variables = {
-    todo: doc
+    todo: lodash.omit(doc, ['user_id', '_attachments'])
   }
+
+  console.log('pushQueryBuilder', {
+    query, variables
+  })
 
   return {
     query,
@@ -164,30 +178,48 @@ export class GraphQLReplicator {
         batchSize,
         queryBuilder: pushQueryBuilder,
         modifier: (doc) => {
-          doc.id = Number(doc.id)
+          console.log('DOC TO PUSH', doc)
           return doc
         }
       },
       pull: {
         queryBuilder: pullQueryBuilder(auth.userId),
         modifier: (doc) => {
-          doc.id = String(doc.id)
           return doc
         }
       },
       live: true,
       /**
-       * Because the websocket is used to inform the client
-       * when something has changed,
-       * we can set the liveIntervall to a high value
-       */
+      * Because the websocket is used to inform the client
+      * when something has changed,
+      * we can set the liveIntervall to a high value
+      */
       liveInterval: 1000 * 60 * 10, // 10 minutes
-      deletedFlag: 'deleted'
+      deletedFlag: '_deleted'
+    })
+
+    console.log('Exposing to window.replicationState for DEBUG')
+    window.replicationState = replicationState
+
+    replicationState.send$.subscribe(data => {
+      console.log('REPLICATION SENDING', data)
+    })
+
+    replicationState.recieved$.subscribe(data => {
+      console.log('REPLICATION RECEIVING', data)
     })
 
     replicationState.error$.subscribe(err => {
       console.error('replication error:')
       console.dir(err)
+    })
+
+    replicationState.active$.subscribe(active => {
+      console.log('replication isActive', active)
+    })
+
+    replicationState.canceled$.subscribe(active => {
+      console.log('replication isCanceled', active)
     })
 
     return replicationState
@@ -218,7 +250,8 @@ export class GraphQLReplicator {
       Todos {
         id
         title
-        deleted
+        _deleted
+        created_at
         is_completed
       }
     }`
@@ -229,8 +262,8 @@ export class GraphQLReplicator {
 
     ret.subscribe({
       next (data) {
-        console.log('subscription emitted => trigger run')
-        console.dir(data)
+        console.log('subscription emitted => trigger run', data)
+        store.dispatch('todos/pushToTodos', { todos: data.data.Todos })
         replicationState.run()
       },
       error (error) {

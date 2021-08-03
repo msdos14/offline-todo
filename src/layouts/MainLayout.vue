@@ -7,6 +7,7 @@
           </q-toolbar-title>
           <q-space ></q-space>
           <q-icon style="font-size: 2em; margin-right: 0.2em" :name="$navigator.onLine ? 'wifi' : 'wifi_off'"></q-icon>
+          <q-btn style="margin-right: 0.2em" flat round icon="clear" @click="wipeDB"></q-btn>
           <q-item clickable v-ripple @click="logout">
             <q-item-section side>
               <q-avatar size="48px">
@@ -60,6 +61,15 @@ export default defineComponent({
       $router.push('/login')
     }
 
+    const wipeDB = async () => {
+      const ok = window.confirm('Voulez vous vraiment réinitialiser la BDD locale?')
+      if (ok) {
+        const db = await Database.getDBInstance()
+        await db.remove()
+        location.reload()
+      }
+    }
+
     const isExpired = () => {
       // Check whether the current time is past the
       // access token's expiry time
@@ -70,7 +80,7 @@ export default defineComponent({
       return LocalStorage.getItem('isLoggedIn') === true
     }
 
-    const setSession = (user, accessToken, claims) => {
+    const setSession = async (user, accessToken, claims) => {
       // Set isLoggedIn flag in localStorage
       LocalStorage.set('isLoggedIn', true)
 
@@ -85,12 +95,12 @@ export default defineComponent({
       LocalStorage.set('accessToken', accessToken)
       LocalStorage.set('idToken', idToken)
 
-      graphqlReplicator.restart({ userId, accessToken })
+      await graphqlReplicator.restart({ userId, accessToken })
     }
 
     const renewSession = () => {
       console.log('Starting set interval')
-      setInterval(async () => {
+      return setInterval(async () => {
         const shouldRenewSession = isLoggedIn() && (!idToken || isExpired())
         if ($v.appContext.config.globalProperties.$navigator.onLine && shouldRenewSession) {
           console.log('Checking session')
@@ -102,7 +112,7 @@ export default defineComponent({
             const claims = await auth0.getIdTokenClaims()
 
             if (user && accessToken && claims) {
-              setSession(user, accessToken, claims)
+              await setSession(user, accessToken, claims)
             }
           } catch (err) {
             logout()
@@ -115,25 +125,42 @@ export default defineComponent({
       }, 5000)
     }
 
+    const initGraphQLReplicator = async () => {
+      const db = await Database.getDBInstance()
+      graphqlReplicator = new Database.GraphQLReplicator(db)
+
+      if ($v.appContext.config.globalProperties.$navigator.onLine) {
+        const auth0 = await loadAuth0
+        const user = await auth0.getUser()
+        const userId = user.sub
+        const accessToken = await auth0.getTokenSilently()
+
+        await graphqlReplicator.restart({ userId, accessToken })
+      }
+    }
+
+    let intervalID
     onBeforeMount(async () => {
-      userRef.value = LocalStorage.get('user')
+      userRef.value = LocalStorage.getItem('user')
 
       if (isLoggedIn()) {
         console.log('Logged in')
-        renewSession()
+        intervalID = renewSession()
       } else {
         console.log('Not logged in')
       }
 
-      const db = await Database.getDBInstance()
-      graphqlReplicator = new Database.GraphQLReplicator(db)
+      await initGraphQLReplicator()
     })
 
     onBeforeUnmount(async () => {
+      clearInterval(intervalID)
+      await Database.cleanUp()
     })
 
     return {
       logout,
+      wipeDB,
       userRef
     }
   }

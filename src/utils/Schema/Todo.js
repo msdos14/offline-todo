@@ -31,3 +31,17 @@ export const TodoSchema = {
   indexes: ['created_at'],
   additionalProperties: true
 }
+
+export const graphQLGenerationInput = {
+  Todos: {
+    schema: TodoSchema,
+    feedKeys: [
+      'id',
+      'updated_at'
+    ],
+    deletedFlag: '_deleted',
+    subscriptionParams: {
+      token: 'String!'
+    }
+  }
+}
