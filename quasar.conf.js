@@ -8,7 +8,7 @@
 
 /* eslint-env node */
 const ESLintPlugin = require('eslint-webpack-plugin')
-const NodePolyfillPlugin  = require('node-polyfill-webpack-plugin')
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
 const { configure } = require('quasar/wrappers')
 
 module.exports = configure(function (ctx) {

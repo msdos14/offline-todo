@@ -31,7 +31,7 @@ const logout = () => {
 const handleAuthentication = async (next) => {
   const auth0 = await loadAuth0
   try {
-    console.log('Handling authentication from routes.js')
+    // console.log('Handling authentication from routes.js')
 
     await auth0.handleRedirectCallback()
     const user = await auth0.getUser()
@@ -40,7 +40,7 @@ const handleAuthentication = async (next) => {
 
     if (user && accessToken && claims) {
       setSession(user, accessToken, claims)
-      console.log('Success')
+      // console.log('Success')
       next('/')
     }
   } catch (err) {
@@ -63,10 +63,10 @@ const routes = [
     ],
     beforeEnter: (to, from, next) => {
       if (!LocalStorage.has('isLoggedIn') || LocalStorage.getItem('isLoggedIn') !== true) {
-        console.log('Erreur non authentifié')
+        // console.log('Erreur non authentifié')
         next('/login')
       } else {
-        console.log('Ok authentifié')
+        // console.log('Ok authentifié')
         next()
       }
     }

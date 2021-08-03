@@ -40,7 +40,7 @@ addPouchPlugin(require('pouchdb-adapter-idb'))
 let db = null
 
 export const createDb = async () => {
-  console.log('DatabaseService: creating database..')
+  // console.log('DatabaseService: creating database..')
 
   const db = await createRxDatabase({
     name: 'tododb',
@@ -49,10 +49,10 @@ export const createDb = async () => {
     queryChangeDetection: true
   })
 
-  console.log('DatabaseService: created database')
+  // console.log('DatabaseService: created database')
   window.db = db // write to window for debugging
 
-  console.log('DatabaseService: create collections')
+  // console.log('DatabaseService: create collections')
   await db.addCollections({
     todos: {
       schema: TodoSchema
@@ -64,23 +64,23 @@ export const createDb = async () => {
 
 export const cleanUp = async () => {
   if (db) {
-    console.log('Destroying DBInstance')
+    // console.log('Destroying DBInstance')
     await db.destroy()
-    console.log('Destroying DBInstance DONE')
+    // console.log('Destroying DBInstance DONE')
   }
 }
 
 export const getDBInstance = async () => {
-  console.log('Getting getDBInstance')
+  // console.log('Getting getDBInstance')
   if (!db) {
-    console.log('DB not instanciated, instantiating')
+    // console.log('DB not instanciated, instantiating')
     db = await createDb()
-    console.log('DB Instanciated')
+    // console.log('DB Instanciated')
   }
   return db
 }
 
-const syncURL = 'https://offline-todo.hasura.app/v1/graphql'
+const SYNC_URL = 'offline-todo.hasura.app/v1/graphql'
 
 const batchSize = 5
 const pullQueryBuilder = (userId) => {
@@ -124,7 +124,7 @@ const pullQueryBuilder = (userId) => {
 }
 
 const pushQueryBuilder = doc => {
-  console.log('pushQueryBuilder START')
+  // console.log('pushQueryBuilder START')
   const query = `
   mutation SetTodos($todo: [Todos_insert_input!]!) {
     insert_Todos(objects: $todo, on_conflict: {constraint: Todos_pkey, update_columns: [title, is_completed, _deleted, updated_at]}) {
@@ -138,9 +138,9 @@ const pushQueryBuilder = doc => {
     todo: lodash.omit(doc, ['user_id', '_attachments', '_rev'])
   }
 
-  console.log('pushQueryBuilder', {
-    query, variables
-  })
+  // console.log('pushQueryBuilder', {
+  //   query, variables
+  // })
 
   return {
     query,
@@ -180,7 +180,7 @@ export class GraphQLReplicator {
 
   async setupGraphQLReplication (auth) {
     const replicationState = this.db.todos.syncGraphQL({
-      url: syncURL,
+      url: `https://${SYNC_URL}`,
       headers: {
         Authorization: `Bearer ${auth.accessToken}`
       },
@@ -188,7 +188,7 @@ export class GraphQLReplicator {
         batchSize,
         queryBuilder: pushQueryBuilder,
         modifier: (doc) => {
-          console.log('DOC TO PUSH', doc)
+          // console.log('DOC TO PUSH', doc)
           return doc
         }
       },
@@ -208,15 +208,15 @@ export class GraphQLReplicator {
       deletedFlag: '_deleted'
     })
 
-    console.log('Exposing to window.replicationState for DEBUG')
+    // console.log('Exposing to window.replicationState for DEBUG')
     window.replicationState = replicationState
 
     replicationState.send$.subscribe(data => {
-      console.log('REPLICATION SENDING', data)
+      // console.log('REPLICATION SENDING', data)
     })
 
     replicationState.recieved$.subscribe(data => {
-      console.log('REPLICATION RECEIVING', data)
+      // console.log('REPLICATION RECEIVING', data)
     })
 
     replicationState.error$.subscribe(err => {
@@ -225,18 +225,18 @@ export class GraphQLReplicator {
     })
 
     replicationState.active$.subscribe(active => {
-      console.log('replication isActive', active)
+      // console.log('replication isActive', active)
     })
 
     replicationState.canceled$.subscribe(active => {
-      console.log('replication isCanceled', active)
+      // console.log('replication isCanceled', active)
     })
 
     return replicationState
   }
 
   setupGraphQLSubscription (auth, replicationState) {
-    const endpointUrl = 'wss://offline-todo.hasura.app/v1/graphql'
+    const endpointUrl = `wss://${SYNC_URL}`
     const wsClient = new SubscriptionClient(endpointUrl, {
       reconnect: true,
       connectionParams: {
@@ -246,10 +246,10 @@ export class GraphQLReplicator {
       },
       timeout: 1000 * 60,
       onConnect: () => {
-        console.log('SubscriptionClient.onConnect()')
+        // console.log('SubscriptionClient.onConnect()')
       },
       connectionCallback: () => {
-        console.log('SubscriptionClient.connectionCallback:')
+        // console.log('SubscriptionClient.connectionCallback:')
       },
       reconnectionAttempts: 10000,
       inactivityTimeout: 10 * 1000,
@@ -272,12 +272,12 @@ export class GraphQLReplicator {
 
     ret.subscribe({
       next (data) {
-        console.log('subscription emitted => trigger run', data)
+        // console.log('subscription emitted => trigger run', data)
         store.dispatch('todos/pushToTodos', { todos: data.data.Todos })
         replicationState.run()
       },
       error (error) {
-        console.log('got error:')
+        // console.log('got error:')
         console.dir(error)
       }
     })

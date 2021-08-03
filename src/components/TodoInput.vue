@@ -37,7 +37,7 @@ export default {
           try {
             db.todos.insert(todoToCreate)
           } catch (err) {
-            console.log('Error insert', err)
+            // console.log('Error insert', err)
           }
           title.value = ''
         })

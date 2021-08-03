@@ -36,7 +36,7 @@ export default {
           .then((db) => {
             db.todos.find()
               .sort('created_at').$.subscribe((records) => {
-                console.log('TODOS', records)
+                // console.log('TODOS', records)
                 $store.dispatch('todos/pushToTodos', { todos: records })
               })
           })

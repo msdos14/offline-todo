@@ -100,15 +100,15 @@ export default defineComponent({
     }
 
     const renewSession = () => {
-      console.log('Starting set interval')
+      // console.log('Starting set interval')
       return setInterval(async () => {
         const shouldRenewSession = isLoggedIn() && (!idToken || isExpired())
         if (isOnlineRef.value && shouldRenewSession) {
-          console.log('Checking session')
+          // console.log('Checking session')
           const auth0 = await loadAuth0
           try {
             const user = await auth0.getUser()
-            console.log('user', user)
+            // console.log('user', user)
             const accessToken = await auth0.getTokenSilently()
             const claims = await auth0.getIdTokenClaims()
 
@@ -117,11 +117,11 @@ export default defineComponent({
             }
           } catch (err) {
             logout()
-            console.log(err)
+            // console.log(err)
             alert(`Could not get a new token (${err.error}: ${err.error_description}).`)
           }
         } else {
-          console.log('no action')
+          // console.log('no action')
         }
       }, 5000)
     }
@@ -166,10 +166,10 @@ export default defineComponent({
       userRef.value = LocalStorage.getItem('user')
 
       if (isLoggedIn()) {
-        console.log('Logged in')
+        // console.log('Logged in')
         intervalID = renewSession()
       } else {
-        console.log('Not logged in')
+        // console.log('Not logged in')
       }
 
       window.addEventListener('offline', handleOfflineEvent)
