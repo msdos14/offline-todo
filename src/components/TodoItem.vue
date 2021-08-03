@@ -9,8 +9,8 @@
 
     <q-item-section side>
       <div class="text-grey-8 q-gutter-xs">
-        <q-btn class="gt-xs" size="12px" flat dense round icon="delete" />
-        <q-btn class="gt-xs" size="12px" flat dense round icon="done" />
+        <q-btn class="gt-xs" size="12px" flat dense round icon="delete" @click="deleteTodo"/>
+        <q-btn class="gt-xs" size="12px" flat dense round icon="done" @click="finishTodo"/>
       </div>
     </q-item-section>
   </q-item>
@@ -24,9 +24,20 @@ export default {
     const formatDate = (date) => {
       moment(date).fromNow()
     }
+
+    const finishTodo = () => {
+      alert('Not implemented')
+    }
+
+    const deleteTodo = () => {
+      alert('Not implement')
+    }
+
     return {
       todo: props.todo,
-      formatDate
+      formatDate,
+      finishTodo,
+      deleteTodo
     }
   }
 }
