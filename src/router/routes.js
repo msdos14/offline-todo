@@ -15,8 +15,6 @@ const setSession = (user, accessToken, claims) => {
   LocalStorage.set('expiresAt', expiresAt)
   LocalStorage.set('accessToken', accessToken)
   LocalStorage.set('idToken', idToken)
-
-  // graphqlReplicator.restart({ userId, accessToken })
 }
 
 const logout = () => {

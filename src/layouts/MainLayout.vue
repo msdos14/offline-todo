@@ -35,7 +35,6 @@ import { LocalStorage } from 'quasar'
 import { useRouter } from 'vue-router'
 
 import * as Database from '../utils/Database'
-// import auth0 from '../utils/auth0'
 import loadAuth0 from '../utils/auth0'
 
 export default defineComponent({
@@ -43,12 +42,6 @@ export default defineComponent({
   setup () {
     const $v = getCurrentInstance()
     const $router = useRouter()
-
-    const userRef = ref(LocalStorage.getItem('user'))
-    const isOnlineRef = ref($v.appContext.config.globalProperties.$navigator.onLine)
-    let idToken = LocalStorage.getItem('idToken')
-    let expiresAt = LocalStorage.getItem('expiresAt')
-    let userId = LocalStorage.getItem('userId')
 
     let graphqlReplicator = null
 
@@ -81,6 +74,10 @@ export default defineComponent({
       return LocalStorage.getItem('isLoggedIn') === true
     }
 
+    let idToken = LocalStorage.getItem('idToken')
+    let expiresAt = LocalStorage.getItem('expiresAt')
+    let userId = LocalStorage.getItem('userId')
+
     const setSession = async (user, accessToken, claims) => {
       // Set isLoggedIn flag in localStorage
       LocalStorage.set('isLoggedIn', true)
@@ -99,6 +96,7 @@ export default defineComponent({
       await graphqlReplicator.restart({ userId, accessToken })
     }
 
+    const isOnlineRef = ref($v.appContext.config.globalProperties.$navigator.onLine)
     const renewSession = () => {
       // console.log('Starting set interval')
       return setInterval(async () => {
@@ -161,6 +159,7 @@ export default defineComponent({
       }
     }
 
+    const userRef = ref(LocalStorage.getItem('user'))
     let intervalID
     onBeforeMount(async () => {
       userRef.value = LocalStorage.getItem('user')
@@ -187,10 +186,10 @@ export default defineComponent({
     })
 
     return {
-      logout,
-      wipeDB,
       userRef,
-      isOnlineRef
+      isOnlineRef,
+      logout,
+      wipeDB
     }
   }
 })

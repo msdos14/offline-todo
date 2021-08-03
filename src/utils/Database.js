@@ -21,14 +21,17 @@ import {
 } from 'subscriptions-transport-ws'
 
 // ONLY USE IN DEV MODE
-// import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode'
-// addRxPlugin(RxDBDevModePlugin)
+import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode'
+addRxPlugin(RxDBDevModePlugin)
 
 import { RxDBEncryptionPlugin } from 'rxdb/plugins/encryption'
 addRxPlugin(RxDBEncryptionPlugin)
 
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder'
 addRxPlugin(RxDBQueryBuilderPlugin)
+
+import { RxDBUpdatePlugin } from 'rxdb/plugins/update'
+addRxPlugin(RxDBUpdatePlugin)
 
 import {
   addPouchPlugin,
