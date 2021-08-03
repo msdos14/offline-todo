@@ -6,7 +6,7 @@
             Offline Todo
           </q-toolbar-title>
           <q-space ></q-space>
-          <q-icon style="font-size: 2em; margin-right: 0.2em" :name="$navigator.onLine ? 'wifi' : 'wifi_off'"></q-icon>
+          <q-icon style="font-size: 2em; margin-right: 0.2em" :name="isOnlineRef ? 'wifi' : 'wifi_off'"></q-icon>
           <q-btn style="margin-right: 0.2em" flat round icon="clear" @click="wipeDB"></q-btn>
           <q-item clickable v-ripple @click="logout">
             <q-item-section side>
@@ -45,6 +45,7 @@ export default defineComponent({
     const $router = useRouter()
 
     const userRef = ref(LocalStorage.getItem('user'))
+    const isOnlineRef = ref($v.appContext.config.globalProperties.$navigator.onLine)
     let idToken = LocalStorage.getItem('idToken')
     let expiresAt = LocalStorage.getItem('expiresAt')
     let userId = LocalStorage.getItem('userId')
@@ -102,7 +103,7 @@ export default defineComponent({
       console.log('Starting set interval')
       return setInterval(async () => {
         const shouldRenewSession = isLoggedIn() && (!idToken || isExpired())
-        if ($v.appContext.config.globalProperties.$navigator.onLine && shouldRenewSession) {
+        if (isOnlineRef.value && shouldRenewSession) {
           console.log('Checking session')
           const auth0 = await loadAuth0
           try {
@@ -125,17 +126,38 @@ export default defineComponent({
       }, 5000)
     }
 
-    const initGraphQLReplicator = async () => {
-      const db = await Database.getDBInstance()
-      graphqlReplicator = new Database.GraphQLReplicator(db)
+    const handleOfflineEvent = () => {
+      isOnlineRef.value = false
+      if (graphqlReplicator) {
+        graphqlReplicator.stop()
+      }
+    }
 
-      if ($v.appContext.config.globalProperties.$navigator.onLine) {
+    const handleOnlineEvent = async () => {
+      isOnlineRef.value = true
+      if (graphqlReplicator) {
         const auth0 = await loadAuth0
         const user = await auth0.getUser()
         const userId = user.sub
         const accessToken = await auth0.getTokenSilently()
 
         await graphqlReplicator.restart({ userId, accessToken })
+      }
+    }
+
+    const initGraphQLReplicator = async () => {
+      const db = await Database.getDBInstance()
+      graphqlReplicator = new Database.GraphQLReplicator(db)
+
+      if (isOnlineRef.value) {
+        const auth0 = await loadAuth0
+        const user = await auth0.getUser()
+        const userId = user.sub
+        const accessToken = await auth0.getTokenSilently()
+
+        await graphqlReplicator.restart({ userId, accessToken })
+      } else {
+        graphqlReplicator.stop()
       }
     }
 
@@ -150,18 +172,25 @@ export default defineComponent({
         console.log('Not logged in')
       }
 
+      window.addEventListener('offline', handleOfflineEvent)
+
+      window.addEventListener('online', handleOnlineEvent)
+
       await initGraphQLReplicator()
     })
 
     onBeforeUnmount(async () => {
       clearInterval(intervalID)
       await Database.cleanUp()
+      window.removeEventListener('offline', handleOfflineEvent)
+      window.removeEventListener('online', handleOnlineEvent)
     })
 
     return {
       logout,
       wipeDB,
-      userRef
+      userRef,
+      isOnlineRef
     }
   }
 })

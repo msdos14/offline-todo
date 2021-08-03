@@ -135,7 +135,7 @@ const pushQueryBuilder = doc => {
   }
   `
   const variables = {
-    todo: lodash.omit(doc, ['user_id', '_attachments'])
+    todo: lodash.omit(doc, ['user_id', '_attachments', '_rev'])
   }
 
   console.log('pushQueryBuilder', {
@@ -153,6 +153,16 @@ export class GraphQLReplicator {
     this.db = db
     this.replicationState = null
     this.subscriptionClient = null
+  }
+
+  async stop () {
+    if (this.replicationState) {
+      this.replicationState.cancel()
+    }
+
+    if (this.subscriptionClient) {
+      this.subscriptionClient.close()
+    }
   }
 
   async restart (auth) {
