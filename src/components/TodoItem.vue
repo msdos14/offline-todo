@@ -26,7 +26,7 @@ export default {
   },
   setup (props) {
     const formatDate = (date) => {
-      moment(date).fromNow()
+      return moment(date).fromNow()
     }
 
     const finishTodo = () => {
