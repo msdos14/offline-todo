@@ -5,6 +5,9 @@ export function pushToTodos ({ state, commit }, payload) {
   let storedTodos = Array.from(state.todos)
 
   lodash.each(payload.todos, (todo) => {
+    if (todo._deleted === undefined) {
+      console.log(`${todo.id}._deleted is undefined`)
+    }
     storedTodos = lodash.filter(storedTodos, (t) => t.id !== todo.id)
     storedTodos = [...storedTodos, todo]
   })
@@ -31,15 +34,20 @@ export async function finishTodo (context, payload) {
 }
 
 export async function deleteTodo (context, payload) {
-  const db = await Database.getDBInstance()
-  const todo = await db.todos.findOne({
-    selector: {
-      id: payload.id
-    }
-  }).exec()
-  if (todo) {
-    todo.remove()
-  } else {
-    console.error(`TODO ${payload.id} not found in DB`)
-  }
+  // const db = await Database.getDBInstance()
+  // const todo = await db.todos.findOne({
+  //   selector: {
+  //     id: payload.id
+  //   }
+  // }).exec()
+  // if (todo) {
+  //   todo.update({
+  //     $set: {
+  //       _deleted: true
+  //     }
+  //   })
+  // } else {
+  //   console.error(`TODO ${payload.id} not found in DB`)
+  // }
+  alert('Not implemented')
 }

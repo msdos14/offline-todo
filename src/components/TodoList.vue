@@ -37,7 +37,15 @@ export default {
           .then((db) => {
             db.todos.find()
               .sort('created_at').$.subscribe((records) => {
-                records = lodash.map(records, (r) => lodash.pick(r, ['id', 'title', 'is_completed', 'created_at', '_deleted']))
+                console.log('records', records)
+                records = lodash.map(records, (r) => {
+                  return lodash.merge(
+                    lodash.pick(r, ['id', 'title', 'is_completed', 'created_at', '_deleted']),
+                    { _deleted: r.deleted }
+                  )
+                })
+                console.log('result records', records)
+                console.log('TODOLIST DISPATCH')
                 $store.dispatch('todos/pushToTodos', { todos: records })
               })
           })

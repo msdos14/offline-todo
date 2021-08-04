@@ -276,7 +276,14 @@ export class GraphQLReplicator {
     ret.subscribe({
       next (data) {
         // console.log('subscription emitted => trigger run', data)
-        store.dispatch('todos/pushToTodos', { todos: data.data.Todos })
+        const records = lodash.map(data.data.Todos, (r) => {
+          return lodash.merge(
+            lodash.pick(r, ['id', 'title', 'is_completed', 'created_at', '_deleted']),
+            { _deleted: r.deleted }
+          )
+        })
+        console.log('DATABASE DISPATCH')
+        store.dispatch('todos/pushToTodos', { todos: records })
         replicationState.run()
       },
       error (error) {
